@@ -1,0 +1,9 @@
+kvm -m 1024 -nographic -kernel linux -initrd initrd.gz -append 'console=ttyS0' -device vfio-pci,host=01:00.0
+
+wget http://us.archive.ubuntu.com/ubuntu/dists/trusty/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux
+wget http://us.archive.ubuntu.com/ubuntu/dists/trusty/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/initrd.gz
+
+modprobe kvm-amd
+mknod /dev/kvm c 10 $(grep '\<kvm\>' /proc/misc | cut -f 1 -d' ')
+
+docker run -v /sys:/sys --rm -it --privileged --name upgrade --pid host --device /dev/kvm -v /lib/modules:/lib/modules:ro kvm
