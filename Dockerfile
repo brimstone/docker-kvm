@@ -6,6 +6,7 @@ RUN apt update \
  && yes | apt --no-install-recommends -y install \
     linux-headers-generic linux-image-generic curl pciutils initramfs-tools \
     systemd systemd-sysv linux-base procps iproute2 isc-dhcp-client netbase ifupdown \
+    ca-certificates \
  && apt-get clean \
  && rm -rf /var/cache/apt/archives /var/lib/apt/lists \
  && echo 'root:toor' | chpasswd
@@ -14,19 +15,20 @@ RUN apt update \
 RUN echo 'auto eth0' > /etc/network/interfaces.d/eth0 \
  && echo 'iface eth0 inet dhcp' >> /etc/network/interfaces.d/eth0
 
+# Fix rc-local
+RUN echo '[Install]' >> /lib/systemd/system/rc-local.service \
+ && echo 'WantedBy=multi-user.target' >> /lib/systemd/system/rc-local.service \
+ && systemctl enable rc-local.service \
+ && echo '#!/bin/bash' > /etc/rc.local \
+ && chmod 755 /etc/rc.local
+
+# Install docker
+RUN curl -sSL https://get.docker.com | bash \
+ && mkdir /etc/docker \
+ && echo '{"storage-driver":"aufs"}' > /etc/docker/daemon.json
+
 ###############################################################################
 
-RUN export DEBIAN_FRONTEND=noninteractive \
- && ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime \
- && echo virtualbox-ext-pack virtualbox-ext-pack/license select true | debconf-set-selections \
- && apt update \
- && apt --no-install-recommends -y install \
-    virtualbox virtualbox-ext-pack vagrant packer git \
-    xauth virtualbox-qt \
- && apt-get clean \
- && rm -rf /var/cache/apt/archives /var/lib/apt/lists
-
-###############################################################################
 FROM ubuntu:20.04
 
 RUN export DEBIAN_FRONTEND=noninteractive \
